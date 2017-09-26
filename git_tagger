@@ -1,0 +1,245 @@
+#!/bin/bash
+
+show_description() {
+    echo "   
+         git_tagger
+
+         This tool bumps your repository's version and pushes the tag to remote git.
+
+         Version: 0.1.1-alpha
+
+         Usage: 
+
+           git_tagger [options]
+
+         Options:
+
+          -s, --staging               tag staging branch.
+          -t, --target <BRANCH>       tag target branch.      
+                                      default is staging.
+          --init                      create VERSION, CHANGELOG.md and README.md.
+
+          -e, --extra                 add extra description for the tag.
+          --install                   install this script to your environment.
+          --update                    update this script, keeping it warm.
+
+
+          -h, --help                  show guidance.
+
+
+         "
+    exit 1
+}
+
+show_help() {
+    echo "
+    - Before you run the script:
+      1. Create a VERSION file, starts with an intial version. e.g. 1.0.0
+      2. Create a CHANGELOG.md, leave it empty.
+
+    - Each version consists of three components:
+      major.minor.patch(.hotfix)
+
+      major:    big change to the software.
+      minor:    new feature, UI change etc.
+      patch:    small code change etc.
+      hotfix:   bug fix only, this is empty if current tag has no bug fix.
+                This tag will be removed if you increase any other version
+                level.
+
+    - You may only create new tags in Staging branch. 
+
+    "
+    exit 1
+}
+
+init_files() {
+    read -p "This command will overwrite your VERSION and CHANGELOG.md, do you still want to continue?(N/y)" ans
+    if [ "$ans" == "y" ] || [ "$ans" == "Y" ]
+    then
+        echo "1.0.0" > VERSION
+        echo "" > CHANGELOG.md
+        touch README.md
+        echo "Done! Version has been reset to 1.0.0"
+        exit 1
+    fi
+
+    echo "Quit!"
+}
+
+update_myself() {
+    read -p "This command will download the latest version of git_tagger,
+make sure you don't have a folder <bootcamp> in this path. continue?(N/y)" ans
+
+    if [ "$ans" == "y" ] || [ "$ans" == "Y" ]
+    then
+        ### pull some shit from github content here.
+        cp ./bootcamp/git_tagger .
+        rm -rf bootcamp
+
+        echo "Done!"
+        exit 1
+    fi
+
+    echo "Quit!"
+}
+
+target="staging"
+
+case "$1" in
+    "--staging"|"-s")
+        echo "Starting to tag staging branch!"
+        ;;
+    "--target"|"-t")
+        echo "Starting to tag $2 branch!"
+        target="$2"
+        ;;
+    "--install"|"-e"|"--extra")
+        echo "Not supported yet, sorry :("
+        exit 1
+        ;;
+    "--update")
+        update_myself
+        exit 1
+        ;;
+    "--init")
+        init_files
+        exit 1
+        ;;
+    "--help"|"-h")
+        show_help
+        exit 1
+        ;;
+    *)
+        show_description
+        exit 1
+        ;;
+esac
+
+echo "-------------------------------"
+
+new_version=""
+
+function read_and_bump {
+    version=$(cat VERSION) 
+    arrIN=(${version//\./ })
+    major_value=${arrIN[0]}
+    minor_value=${arrIN[1]}
+    patch_value=${arrIN[2]}
+    hotfix_value=${arrIN[3]}
+    new_hotfix_value=""
+
+    case "$1" in
+        "major")
+            let major_value=major_value+1
+            ;;
+        "minor")
+            let minor_value=minor_value+1
+            ;;
+        "patch")
+            let patch_value=patch_value+1
+            ;;
+        "hotfix")
+            line_insert=$(echo $(git diff origin --shortstat) | sed 's/.*changed, \([0-9]*\).*/\1/')
+            line_delete=$(echo $(git diff origin --shortstat) | sed 's/.*(+), \([0-9]*\).*/\1/')
+
+            let number_of_changes=line_insert+line_delete
+            let new_hotfix_value=hotfix_value+number_of_changes
+            ;;
+        *)
+            echo "Wrong input!"
+            exit 1
+            ;;
+    esac
+
+    if [ "$new_hotfix_value" != "" ]
+    then
+        new_version="$major_value.$minor_value.$patch_value.$new_hotfix_value"
+    else
+        echo "[*] Hotfix tag has been removed (if it exists)."
+        new_version="$major_value.$minor_value.$patch_value"
+    fi
+
+    echo -e "\e[31mVersion has changed: \e[93m[ $version ] -> [ $new_version ]\e[0m"
+    echo "$new_version" > VERSION
+}
+
+branch=$(git symbolic-ref --short -q HEAD) 
+echo -e "\e[31mCurrent branch  is: \e[93m[ $branch ] \e[0m"
+echo -e "\e[31mCurrent version is: \e[93m[ $(cat VERSION) ] \e[0m"
+
+if [ "$branch" != "$target" ]
+then
+    echo "Switch to $target branch and pull first!"
+    exit 1;
+fi
+
+read -p "Choose your tag level by number: 
+1) major
+2) minor
+3) patch
+4) hotfix
+> " answer
+
+echo -e "Track remote branch : \e[93m$target\e[0m"
+
+git branch -u origin/$target $target > /dev/null
+git pull > /dev/null
+
+case "$answer" in
+    "1")
+        read_and_bump major
+        ;;
+    "2")
+        read_and_bump minor 
+        ;;
+    "3")
+        read_and_bump patch 
+        ;;
+    "4")
+        read_and_bump hotfix
+        ;;
+    *)
+        echo "*** Invalid number! ***"
+        exit 1
+        ;;
+esac
+
+touch CHANGELOG.md
+
+echo "+---------------------------------------+"
+echo "|        Write your CHANGELOG.md        |"
+echo "+---------------------------------------+"
+echo -e "\e[31m * Type ENTER again to end  \e[0m"
+
+content=""
+counter=1
+
+while read -p "$counter> " line
+do
+    [ -z "$line" ] && break
+    content="$content 
+    $counter: $line"
+    let "counter+=1"
+done
+
+echo "$content
+" | cat - CHANGELOG.md > tmp_CHANGELOG && mv tmp_CHANGELOG CHANGELOG.md
+
+echo "
+### Version: $(echo $(cat VERSION)) ----- $(date '+%Y-%m-%d %H:%M:%S')" | cat - CHANGELOG.md > tmp_CHANGELOG && mv tmp_CHANGELOG CHANGELOG.md 
+
+read -p "Do you want to push? (Y/n)" n
+
+if [ "$n" == "" ] || [ "$n" == "Y" ] || [ "$n" == "y" ]
+then
+    echo "$n"
+    git add . > /dev/null
+    git commit -m "$(cat VERSION)" > /dev/null
+    git tag "v$new_version" > /dev/null
+    git push origin $target > /dev/null
+    git push --tags > /dev/null
+    echo "The change has been pushed."
+else
+    echo "The change has not been pushed."
+fi
