@@ -6,7 +6,7 @@ show_description() {
 
          This tool bumps your repository's version and pushes the tag to remote git.
 
-         Version: 0.1.1-alpha
+         Version: 0.0.1
 
          Usage: 
 
@@ -14,7 +14,7 @@ show_description() {
 
          Options:
 
-          -s, --staging               tag staging branch.
+          -s, --master                tag master branch.
           -t, --target <BRANCH>       tag target branch.      
                                       default is staging.
           --init                      create VERSION, CHANGELOG.md and README.md.
@@ -33,10 +33,6 @@ show_description() {
 
 show_help() {
     echo "
-    - Before you run the script:
-      1. Create a VERSION file, starts with an intial version. e.g. 1.0.0
-      2. Create a CHANGELOG.md, leave it empty.
-
     - Each version consists of three components:
       major.minor.patch(.hotfix)
 
@@ -46,8 +42,6 @@ show_help() {
       hotfix:   bug fix only, this is empty if current tag has no bug fix.
                 This tag will be removed if you increase any other version
                 level.
-
-    - You may only create new tags in Staging branch. 
 
     "
     exit 1
@@ -84,17 +78,17 @@ make sure you don't have a folder <bootcamp> in this path. continue?(N/y)" ans
     echo "Quit!"
 }
 
-target="staging"
+target="master"
 
 case "$1" in
-    "--staging"|"-s")
-        echo "Starting to tag staging branch!"
+    "--master"|"-s")
+        echo "Starting to tag master branch!"
         ;;
     "--target"|"-t")
         echo "Starting to tag $2 branch!"
         target="$2"
         ;;
-    "--install"|"-e"|"--extra")
+    "--install"|"--update"|"-e"|"--extra")
         echo "Not supported yet, sorry :("
         exit 1
         ;;
