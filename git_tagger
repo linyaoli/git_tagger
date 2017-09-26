@@ -67,10 +67,7 @@ make sure you don't have a folder <bootcamp> in this path. continue?(N/y)" ans
 
     if [ "$ans" == "y" ] || [ "$ans" == "Y" ]
     then
-        ### pull some shit from github content here.
-        cp ./bootcamp/git_tagger .
-        rm -rf bootcamp
-
+        wget -q -O git_tagger https://raw.githubusercontent.com/linyaoli/git_tagger/master/git_tagger
         echo "Done!"
         exit 1
     fi
@@ -88,7 +85,7 @@ case "$1" in
         echo "Starting to tag $2 branch!"
         target="$2"
         ;;
-    "--install"|"--update"|"-e"|"--extra")
+    "--install"|"-e"|"--extra")
         echo "Not supported yet, sorry :("
         exit 1
         ;;
