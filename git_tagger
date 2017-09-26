@@ -62,8 +62,7 @@ init_files() {
 }
 
 update_myself() {
-    read -p "This command will download the latest version of git_tagger,
-make sure you don't have a folder <bootcamp> in this path. continue?(N/y)" ans
+    read -p "This command will download the latest version of git_tagger, continue?(N/y)" ans
 
     if [ "$ans" == "y" ] || [ "$ans" == "Y" ]
     then
