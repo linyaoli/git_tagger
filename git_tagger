@@ -16,13 +16,14 @@ show_description() {
 
           -s, --master                tag master branch.
           -t, --target <BRANCH>       tag target branch.      
-                                      default is staging.
-          --init                      create VERSION, CHANGELOG.md and README.md.
-
+                                      use staging as default.
+          -p, --path   <PATH>         specify the path to your repository, use
+                                      current path as default.
           -e, --extra                 add extra description for the tag.
+
           --install                   install this script to your environment.
           --update                    update this script, keeping it warm.
-
+          --init                      create VERSION, CHANGELOG.md and README.md.
 
           -h, --help                  show guidance.
 
