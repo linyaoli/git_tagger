@@ -6,7 +6,7 @@ show_description() {
 
          This tool bumps your repository's version and pushes the tag to remote git.
 
-         Version: 0.0.1
+         Version: 0.1.1
 
          Usage: 
 
@@ -15,11 +15,12 @@ show_description() {
          Options:
 
           -s, --master                tag master branch.
-          -t, --target <BRANCH>       tag target branch.      
+          -t, --target  <BRANCH>      tag target branch.
                                       default is staging.
-          --init                      create VERSION, CHANGELOG.md and README.md.
-
+          -v, --version <VERSION>     bump current version to a target version.
           -e, --extra                 add extra description for the tag.
+
+          --init                      create VERSION, CHANGELOG.md and README.md.
           --install                   install this script to your environment.
           --update                    update this script, keeping it warm.
 
@@ -33,6 +34,10 @@ show_description() {
 
 show_help() {
     echo "
+    - Before you run the script:
+      1. Create a VERSION file, starts with an intial version. e.g. 1.0.0
+      2. Create a CHANGELOG.md, leave it empty.
+
     - Each version consists of three components:
       major.minor.patch(.hotfix)
 
@@ -84,6 +89,26 @@ case "$1" in
         echo "Starting to tag $2 branch!"
         target="$2"
         ;;
+    "--version"|"-v")
+        read -p "1. Make sure the format is as v1.2.1;
+                 2. This command will push version to remote;
+                 3. This command will not write CHANGELOG;
+                 continue? (N/y)" ans
+        if [ "$ans" != "y" ]
+        then
+            echo "Quit!"
+            exit 1
+        fi
+        if [ "$3" == "" ]
+        then
+            echo "Type your version!"
+            exit 1
+        fi
+        echo "Starting to tag to version $2!"
+        echo $2 > VERSION
+        git tag $2
+        git push --tags
+        ;;
     "--install"|"-e"|"--extra")
         echo "Not supported yet, sorry :("
         exit 1
@@ -122,12 +147,18 @@ function read_and_bump {
     case "$1" in
         "major")
             let major_value=major_value+1
+            let minor_value=0
+            let patch_value=0
+            let hotfix_value=0
             ;;
         "minor")
             let minor_value=minor_value+1
+            let patch_value=0
+            let hotfix_value=0
             ;;
         "patch")
             let patch_value=patch_value+1
+            let hotfix_value=0
             ;;
         "hotfix")
             line_insert=$(echo $(git diff origin --shortstat) | sed 's/.*changed, \([0-9]*\).*/\1/')
@@ -153,6 +184,8 @@ function read_and_bump {
     echo -e "\e[31mVersion has changed: \e[93m[ $version ] -> [ $new_version ]\e[0m"
     echo "$new_version" > VERSION
 }
+
+
 
 branch=$(git symbolic-ref --short -q HEAD) 
 echo -e "\e[31mCurrent branch  is: \e[93m[ $branch ] \e[0m"
@@ -233,3 +266,5 @@ then
 else
     echo "The change has not been pushed."
 fi
+
+echo "Done."
